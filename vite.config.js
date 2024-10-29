@@ -1,47 +1,32 @@
-import path     from "path";
-import fs       from "fs";
+import path                 from 'path';
+import { defineConfig }     from 'vite';
+import { directoryPlugin }  from 'vite-plugin-list-directory-contents';
 
-const ignorePaths = [ ".git", "node_modules", "dist", "site" ];
+export default defineConfig(({ command, mode, ssrBuild, isPreview }) => {
+    if ( command === 'serve') {
+      return {
+            base      : './',
+            // publicDir : path.join( __dirname, 'prototypes' ),
+            plugins   : [
+                directoryPlugin( {
+                    baseDir     : __dirname,
+                    filterList  : [ 'node_modules', '.git', '.github', '_store', '_images', 'dist', 'src', '.*' ],
+                }),
+            ],
 
-function getHtmlPaths( dirPath = __dirname, htmlPaths = {} ){
-    const files = fs.readdirSync(dirPath);
-
-    for( const file of files ){
-        if( ignorePaths.includes( file ) ) continue;
-
-        const absPath = path.join( dirPath, file );
-
-        if( fs.statSync(absPath).isDirectory() ){
-            htmlPaths = getHtmlPaths( absPath, htmlPaths );
-        
-        }else if( path.extname(file) === ".html" ){
-            const relPath       = path.relative( __dirname, absPath );
-            htmlPaths[relPath]  = absPath;
-        }
-    }
-
-    return htmlPaths;
-}
-
-export default ( { command, mode } ) => {
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    if( mode === "site" || command === "serve" ){
-
-        const repo  = process.env.GITHUB_REPOSITORY;
-        const base  = ( repo )? `/${repo.split("/")[1]}/` : '/';
-        
-        return {
-            base,
-            build       : {
-                outDir          : path.resolve( __dirname, "site" ),
-                minify          : false,
-                rollupOptions   : { input: getHtmlPaths() },
+            server    : {
+                host        : 'localhost',
+                port        : 3015,
+                open        : '/',
+                strictPort  : true,
             },
-            publicDir   : path.join( __dirname, "prototype", "public" ),
-            server      : {
-                port : 3111, 
-                open : '/prototype/_template.html',
-            },
-        };
+
+            resolve : {
+                alias:{
+                    // '@three'          : path.resolve( __dirname, './prototypes/_thirdparty/three.module.js' ),
+                    'OrbitControls'  : path.resolve( __dirname, './node_modules/three/examples/jsm/controls/OrbitControls.js' ),
+                }
+            }
+        }   
     }
-};
+});
