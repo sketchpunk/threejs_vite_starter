@@ -1,0 +1,46 @@
+<!DOCTYPE html><html><head><title></title></head><body><script type="module">
+import Starter, { THREE }       from '../lib/Starter.js';
+import ShapePointsMesh          from '../lib/meshes/ShapePointsMesh.js';
+import DynLinesMesh             from '../lib/meshes/DynLineMesh.js';
+
+import { load }                 from '@loaders.gl/core';
+import { Tiles3DLoader }        from '@loaders.gl/3d-tiles';
+import { Tileset3D }            from '@loaders.gl/tiles'; // Load a tileset and dynamically load/unload tiles based on viewport 
+
+//import { WebMercatorViewport }  from '@math.gl/web-mercator';
+import { WebMercatorViewport }  from '@deck.gl/core';
+
+let App;
+let Debug = {};
+
+// https://github.com/visgl/loaders.gl/blob/master/examples/website/3d-tiles/app.js
+// https://loaders.gl/examples/3d-tiles
+
+window.addEventListener( "load", _=>{
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App = new Starter( { webgl2:false, grid:true } );
+    App.setCamera( 0, 20, 8, [0,0,0] ).render();
+
+    App.add( (Debug.pnt = new ShapePointsMesh() ) );
+    App.add( (Debug.ln  = new DynLinesMesh() ) );
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    loadTileset( './tilesets/PointCloudRGB/tileset.json' );
+});
+
+async function loadTileset( url ){
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Await loader
+    let json;
+    try{ json = await load( url, Tiles3DLoader ); }
+    catch( err ){ console.error( err.message ); return; }   
+
+    const tileset = new Tileset3D( json, { onTileLoad: tile => console.log( 'tile', tile ) } );
+
+    console.log( json );
+    console.log( tileset );
+    const viewport = new WebMercatorViewport( { latitude:40.04253, longitude:-75.61209, zoom:19.28 } );
+    tileset.update( viewport );
+}
+</script></body></html>

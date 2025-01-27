@@ -1,0 +1,42 @@
+<!DOCTYPE html><html><head><title></title></head><body><script type="module">
+import Starter, { THREE }  from '../lib/Starter.js';
+import PointAllocation     from '../lib/meshes/PointAllocation.js';
+
+
+let App;
+let Debug = {};
+
+window.addEventListener( "load", _=>{
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App = new Starter( { webgl2:false, grid:true } );
+    App.setCamera( 0, 20, 4 ).render();
+
+    /*
+    let pnts = new PointAllocation( null, 3 );
+    App.add( pnts.mesh );
+
+    //pnts.add( [0,0,0] );
+    //pnts.add( [0,0.5,0] );
+    //pnts.add( [0,1,0] );
+    //pnts.add( [0,1.5,0] );
+
+    // setTimeout( ()=>{
+    //     pnts.add( [0,0,0] );
+    // }, 1000 );
+    
+    let y=0;
+    setInterval( ()=>{
+        pnts.add( [0,y+=0.5,0] );
+        pnts.updateGeometry();
+    }, 1000 );
+    */
+
+    const a = new Float32Array( [0,1,2,3,4,5] );
+    const b = new Float32Array( a.buffer, 2 * 4, 1 );
+    console.log( a, b, ( a.buffer === b.buffer ) );
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+});
+
+
+</script></body></html>

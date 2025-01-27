@@ -1,0 +1,145 @@
+<!DOCTYPE html><html><head><title></title></head><body><script type="module">
+import Starter, { THREE }       from '../lib/Starter.js';
+import ShapePointsMesh          from '../lib/meshes/ShapePointsMesh.js';
+import DynLinesMesh             from '../lib/meshes/DynLineMesh.js';
+import PointAllocation          from '../lib/meshes/PointAllocation.js';
+
+import { PLYLoader }            from '@loaders.gl/ply';
+import {load, registerLoaders}  from '@loaders.gl/core';
+
+let App;
+let Debug = {};
+let Ref   = { generatorStack:[], frame:0 };
+
+window.addEventListener( "load", _=>{
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App = new Starter( { webgl2:false, grid:true } );
+    App.setCamera( 0, 20, 20 ).render();
+
+    App.onRender = ( dt, et )=>{
+        let result, i=0;
+        while( i < Ref.generatorStack.length ){
+            //console.log( 'Frame %d', Ref.frame++ );
+            result = Ref.generatorStack[ i ].next();
+            
+            if( result.done ){
+                Ref.generatorStack.splice( i, 1 );
+                console.log( 'Generator Done' );
+            }else i++;
+        }
+    };
+
+    App.add( (Debug.pnt = new ShapePointsMesh() ) );
+    App.add( (Debug.ln  = new DynLinesMesh() ) );
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Setup Loaders
+    registerLoaders( [ PLYLoader ] );
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //loadVertices( './ply/richmond-azaelias.ply' );
+    loadVertices( './ply/hintze-hall-lo.ply' );
+});
+
+
+function* loadGenerator( verts, colors=null, perFrame=100, pnts ){
+    const v     = [ 0, 0, 0 ];
+    let   i     = 0;
+    let   c     = 0x00ffff;
+    let   cnt;
+    
+    while( i < verts.length ){
+        cnt = 0;
+        //console.time( 'Gen Mesh' );
+        while( cnt < perFrame && i < verts.length ){
+
+            v[ 0 ] = verts[ i+0 ];
+            v[ 1 ] = verts[ i+1 ];
+            v[ 2 ] = verts[ i+2 ];
+
+            if( colors ){
+                c = colors[ i+0 ] << 16 |
+                    colors[ i+1 ] << 8  |
+                    colors[ i+2 ];
+            }
+
+            pnts.add( v, c );
+
+            i   += 3;
+            cnt += 1;
+        }
+
+        pnts.updateGeometry();
+        //console.timeEnd( 'Gen Mesh' );
+        yield false;
+    }
+
+    return true;
+}
+
+
+async function loadVertices( url ){
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Await loader
+    let data;
+    console.time( 'Download File' );
+    try{ data = await load( url ); }
+    catch( err ){ console.error( err.message ); return; }
+    console.timeEnd( 'Download File' );
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Checking for various properties
+    if( data?.header?.vertexCount ) console.log( 'Vertex Count: %d', data.header.vertexCount );
+
+    if( data?.header?.boundingBox ){
+        const min = data.header.boundingBox[ 0 ];
+        const max = data.header.boundingBox[ 1 ];
+
+        Debug.ln.box( min, max, 0x606060, true );
+        console.log( 'Bounding Volume : min [ %s ] max [ %s ]', min, max );
+
+        fitCamera( min, max, 3 );
+    }
+
+    /*
+    target: [(mins[0] + maxs[0]) / 2, (mins[1] + maxs[1]) / 2, (mins[2] + maxs[2]) / 2],
+    zoom: Math.log2(window.innerWidth / (maxs[0] - mins[0])) - 1
+    */
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // console.log( data );
+
+    const verts  = data.attributes?.POSITION?.value;
+    const colors = data.attributes?.COLOR_0?.value;
+
+    if( !verts ){ console.error( 'No vertices found in attributes' ); return; }
+
+    const cloud = new PointAllocation( null, data.header.vertexCount );
+    App.add( cloud.mesh );
+
+    Ref.generatorStack.push( loadGenerator( verts, colors, 10000, cloud ) );
+}
+
+// #region HELPERS
+function fitCamera( min, max, offset=1.1 ){
+    const maxSize = Math.max( max[0]-min[0], max[1]-min[1], max[2]-min[2] );
+    const fov     = App.camera.fov * ( Math.PI / 180 ); // To Radians
+    const camZ    = Math.abs( maxSize * Math.tan( fov * 0.5 ) ) * offset;
+    const center  = [ 
+        min[ 0 ] * 0.5 + max[ 0 ] * 0.5,
+        min[ 1 ] * 0.5 + max[ 1 ] * 0.5,
+        min[ 2 ] * 0.5 + max[ 2 ] * 0.5,
+    ];
+
+    App.orbit.target.fromArray( center );
+    App.camera.position.set(
+        center[ 0 ],
+        center[ 1 ],
+        center[ 2 ] + camZ,
+    );
+
+    App.orbit.update();
+}
+// #endregion
+
+</script></body></html>

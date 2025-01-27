@@ -1,0 +1,8 @@
+https://github.com/visgl/loaders.gl/tree/master/modules/3d-tiles/test/data/PointCloud
+
+https://github.com/visgl/loaders.gl/tree/master/modules/3d-tiles/test/data/Tilesets/Tileset
+
+https://github.com/visgl/loaders.gl/tree/master/examples/experimental/3d-tiles-with-three.js
+
+https://loaders.gl/modules/3d-tiles/docs/api-reference/tiles-3d-loader
+https://loaders.gl/modules/tiles/docs/api-reference/tileset-3d
